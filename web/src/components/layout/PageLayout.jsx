@@ -60,6 +60,7 @@ const PageLayout = () => {
     '/console/task',
     '/console/models',
     '/pricing',
+    '/docs',
   ];
 
   const shouldHideFooter = cardProPages.includes(location.pathname);
@@ -221,16 +222,6 @@ const PageLayout = () => {
               <App />
             </ErrorBoundary>
           </Content>
-          {!shouldHideFooter && (
-            <Layout.Footer
-              style={{
-                flex: '0 0 auto',
-                width: '100%',
-              }}
-            >
-              <FooterBar />
-            </Layout.Footer>
-          )}
         </Layout>
       </Layout>
       <ToastContainer />
