@@ -154,6 +154,39 @@ export const useUsersData = () => {
     setLoading(false);
   };
 
+  const batchDeleteUsers = async (deleteType) => {
+    setLoading(true);
+    try {
+      const res = await API.delete(`/api/user/batch?type=${deleteType}`);
+      const { success, message, data } = res.data;
+      if (success) {
+        showSuccess(t('已永久删除 {{count}} 个用户', { count: data ?? 0 }));
+      } else {
+        showError(message);
+      }
+    } catch (error) {
+      showError(t('操作失败，请重试'));
+    }
+    setLoading(false);
+  };
+
+  const hardDeleteUser = async (userId) => {
+    setLoading(true);
+    try {
+      const res = await API.delete(`/api/user/${userId}`);
+      const { success, message } = res.data;
+      if (success) {
+        showSuccess(t('用户已永久删除'));
+        setUsers((prev) => prev.filter((u) => u.id !== userId));
+      } else {
+        showError(message);
+      }
+    } catch (error) {
+      showError(t('操作失败，请重试'));
+    }
+    setLoading(false);
+  };
+
   const resetUserPasskey = async (user) => {
     if (!user) {
       return;
@@ -305,6 +338,8 @@ export const useUsersData = () => {
     loadUsers,
     searchUsers,
     manageUser,
+    batchDeleteUsers,
+    hardDeleteUser,
     resetUserPasskey,
     resetUserTwoFA,
     handlePageChange,

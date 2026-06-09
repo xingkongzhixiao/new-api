@@ -206,6 +206,7 @@ const renderOperations = (
     showDemoteModal,
     showEnableDisableModal,
     showDeleteModal,
+    showHardDeleteModal,
     showResetPasskeyModal,
     showResetTwoFAModal,
     showUserSubscriptionsModal,
@@ -243,6 +244,12 @@ const renderOperations = (
       name: t('注销'),
       type: 'danger',
       onClick: () => showDeleteModal(record),
+    },
+    {
+      node: 'item',
+      name: t('永久删除'),
+      type: 'danger',
+      onClick: () => showHardDeleteModal(record),
     },
   ];
 
@@ -306,6 +313,7 @@ export const getUsersColumns = ({
   showDemoteModal,
   showEnableDisableModal,
   showDeleteModal,
+  showHardDeleteModal,
   showResetPasskeyModal,
   showResetTwoFAModal,
   showUserSubscriptionsModal,
@@ -363,6 +371,7 @@ export const getUsersColumns = ({
           showDemoteModal,
           showEnableDisableModal,
           showDeleteModal,
+          showHardDeleteModal,
           showResetPasskeyModal,
           showResetTwoFAModal,
           showUserSubscriptionsModal,

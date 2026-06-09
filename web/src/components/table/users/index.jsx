@@ -58,6 +58,9 @@ const UsersPage = () => {
     compactMode,
     setCompactMode,
 
+    // Actions
+    batchDeleteUsers,
+
     // Translation
     t,
   } = usersData;
@@ -88,7 +91,7 @@ const UsersPage = () => {
         }
         actionsArea={
           <div className='flex flex-col md:flex-row justify-between items-center gap-2 w-full'>
-            <UsersActions setShowAddUser={setShowAddUser} t={t} />
+            <UsersActions setShowAddUser={setShowAddUser} batchDeleteUsers={batchDeleteUsers} refresh={refresh} t={t} />
 
             <UsersFilters
               formInitValues={formInitValues}

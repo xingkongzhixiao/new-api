@@ -17,21 +17,52 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@douyinfe/semi-ui';
+import BatchDeleteModal from './modals/BatchDeleteModal';
 
-const UsersActions = ({ setShowAddUser, t }) => {
-  // Add new user
+const UsersActions = ({ setShowAddUser, batchDeleteUsers, refresh, t }) => {
+  const [batchDeleteType, setBatchDeleteType] = useState(null);
+
   const handleAddUser = () => {
     setShowAddUser(true);
   };
 
   return (
-    <div className='flex gap-2 w-full md:w-auto order-2 md:order-1'>
-      <Button className='w-full md:w-auto' onClick={handleAddUser} size='small'>
-        {t('添加用户')}
-      </Button>
-    </div>
+    <>
+      <div className='flex gap-2 w-full md:w-auto order-2 md:order-1 flex-wrap'>
+        <Button className='w-full md:w-auto' onClick={handleAddUser} size='small'>
+          {t('添加用户')}
+        </Button>
+        <Button
+          className='w-full md:w-auto'
+          type='danger'
+          theme='light'
+          size='small'
+          onClick={() => setBatchDeleteType('disabled')}
+        >
+          {t('删除已禁用')}
+        </Button>
+        <Button
+          className='w-full md:w-auto'
+          type='danger'
+          theme='light'
+          size='small'
+          onClick={() => setBatchDeleteType('cancelled')}
+        >
+          {t('删除已注销')}
+        </Button>
+      </div>
+
+      <BatchDeleteModal
+        visible={batchDeleteType !== null}
+        onCancel={() => setBatchDeleteType(null)}
+        deleteType={batchDeleteType}
+        batchDeleteUsers={batchDeleteUsers}
+        refresh={refresh}
+        t={t}
+      />
+    </>
   );
 };
 

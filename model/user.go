@@ -328,6 +328,18 @@ func HardDeleteUserById(id int) error {
 	return err
 }
 
+// BatchHardDeleteDisabledUsers permanently removes all disabled (status=2) non-root users.
+func BatchHardDeleteDisabledUsers() (int64, error) {
+	result := DB.Unscoped().Where("status = ? AND role < ?", common.UserStatusDisabled, common.RoleRootUser).Delete(&User{})
+	return result.RowsAffected, result.Error
+}
+
+// BatchHardDeleteCancelledUsers permanently removes all soft-deleted (cancelled) non-root users.
+func BatchHardDeleteCancelledUsers() (int64, error) {
+	result := DB.Unscoped().Where("deleted_at IS NOT NULL AND role < ?", common.RoleRootUser).Delete(&User{})
+	return result.RowsAffected, result.Error
+}
+
 func inviteUser(inviterId int) (err error) {
 	user, err := GetUserById(inviterId, true)
 	if err != nil {

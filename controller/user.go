@@ -772,12 +772,37 @@ func DeleteUser(c *gin.Context) {
 	}
 	err = model.HardDeleteUserById(id)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": true,
-			"message": "",
-		})
+		common.ApiError(c, err)
 		return
 	}
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+	})
+}
+
+func BatchDeleteUsers(c *gin.Context) {
+	deleteType := c.Query("type")
+	var count int64
+	var err error
+	switch deleteType {
+	case "disabled":
+		count, err = model.BatchHardDeleteDisabledUsers()
+	case "cancelled":
+		count, err = model.BatchHardDeleteCancelledUsers()
+	default:
+		common.ApiError(c, errors.New("invalid type, must be 'disabled' or 'cancelled'"))
+		return
+	}
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+		"data":    count,
+	})
 }
 
 func DeleteSelf(c *gin.Context) {
