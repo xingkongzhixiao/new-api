@@ -1,3 +1,31 @@
+import { getCurrencyConfig } from './render';
+
+export function formatSubscriptionPrice(plan, digits = 2) {
+  const amount = Number(plan?.price_amount || 0);
+  const planCurrency = plan?.currency || getCurrencyConfig().type;
+  const current = getCurrencyConfig();
+  const symbolMap = {
+    USD: '$',
+    CNY: '¥',
+  };
+  let symbol = symbolMap[planCurrency] || current.symbol;
+
+  let displayAmount = amount;
+  if (planCurrency !== current.type) {
+    if (planCurrency === 'USD') {
+      displayAmount = amount * current.rate;
+      symbol = current.symbol;
+    } else if (current.type === 'USD') {
+      displayAmount = amount / (current.rate || 1);
+      symbol = current.symbol;
+    }
+  }
+
+  return `${symbol}${displayAmount.toFixed(
+    Number.isInteger(displayAmount) ? 0 : digits,
+  )}`;
+}
+
 export function formatSubscriptionDuration(plan, t) {
   const unit = plan?.duration_unit || 'month';
   const value = plan?.duration_value || 1;

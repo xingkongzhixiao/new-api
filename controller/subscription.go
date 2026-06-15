@@ -126,10 +126,7 @@ func AdminCreateSubscriptionPlan(c *gin.Context) {
 		common.ApiErrorMsg(c, "价格不能超过9999")
 		return
 	}
-	if req.Plan.Currency == "" {
-		req.Plan.Currency = "USD"
-	}
-	req.Plan.Currency = "USD"
+	req.Plan.Currency = normalizeSubscriptionCurrency(req.Plan.Currency)
 	if req.Plan.DurationUnit == "" {
 		req.Plan.DurationUnit = model.SubscriptionDurationMonth
 	}
@@ -189,10 +186,7 @@ func AdminUpdateSubscriptionPlan(c *gin.Context) {
 		return
 	}
 	req.Plan.Id = id
-	if req.Plan.Currency == "" {
-		req.Plan.Currency = "USD"
-	}
-	req.Plan.Currency = "USD"
+	req.Plan.Currency = normalizeSubscriptionCurrency(req.Plan.Currency)
 	if req.Plan.DurationUnit == "" {
 		req.Plan.DurationUnit = model.SubscriptionDurationMonth
 	}
@@ -252,6 +246,18 @@ func AdminUpdateSubscriptionPlan(c *gin.Context) {
 	}
 	model.InvalidateSubscriptionPlanCache(id)
 	common.ApiSuccess(c, nil)
+}
+
+func normalizeSubscriptionCurrency(currency string) string {
+	currency = strings.ToUpper(strings.TrimSpace(currency))
+	switch currency {
+	case "CNY", "TOKENS", "CUSTOM":
+		return currency
+	case "USD":
+		return "USD"
+	default:
+		return "USD"
+	}
 }
 
 type AdminUpdateSubscriptionPlanStatusRequest struct {

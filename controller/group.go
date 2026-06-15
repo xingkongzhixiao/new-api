@@ -25,7 +25,7 @@ func GetGroups(c *gin.Context) {
 	})
 }
 
-// GetSubscriptionGroups returns subscription (user) groups from GroupRatio.
+// GetSubscriptionGroups returns subscription/user groups from GroupRatio.
 // Used by admin when editing a user's subscription group.
 func GetSubscriptionGroups(c *gin.Context) {
 	groupNames := make([]string, 0)

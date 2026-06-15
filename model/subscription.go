@@ -404,6 +404,7 @@ func downgradeUserGroupForSubscriptionTx(tx *gorm.DB, sub *UserSubscription, now
 		return "", errors.New("invalid downgrade args")
 	}
 	upgradeGroup := strings.TrimSpace(sub.UpgradeGroup)
+	prevGroup := strings.TrimSpace(sub.PrevUserGroup)
 	if upgradeGroup == "" {
 		return "", nil
 	}
@@ -423,7 +424,6 @@ func downgradeUserGroupForSubscriptionTx(tx *gorm.DB, sub *UserSubscription, now
 	if activeQuery.Error == nil && activeQuery.RowsAffected > 0 {
 		return "", nil
 	}
-	prevGroup := strings.TrimSpace(sub.PrevUserGroup)
 	if prevGroup == "" || prevGroup == currentGroup {
 		return "", nil
 	}
@@ -888,6 +888,7 @@ func ExpireDueSubscriptions(limit int) (int, error) {
 				return err
 			}
 			cacheGroup = prevGroup
+
 			return nil
 		})
 		if err != nil {

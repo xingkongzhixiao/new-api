@@ -43,7 +43,6 @@ import { API, showError, showSuccess } from '../../../../helpers';
 import {
   quotaToDisplayAmount,
   displayAmountToQuota,
-  getQuotaPerUnit,
 } from '../../../../helpers/quota';
 import { getCurrencyConfig } from '../../../../helpers/render';
 import { useIsMobile } from '../../../../hooks/common/useIsMobile';
@@ -110,7 +109,7 @@ const AddEditSubscriptionModal = ({
       title: p.title || '',
       subtitle: p.subtitle || '',
       price_amount: Number(p.price_amount || 0),
-      currency: getCurrencyConfig().type,
+      currency: p.currency || getCurrencyConfig().type,
       duration_unit: p.duration_unit || 'month',
       duration_value: Number(p.duration_value || 1),
       custom_seconds: Number(p.custom_seconds || 0),
@@ -119,9 +118,7 @@ const AddEditSubscriptionModal = ({
       enabled: p.enabled !== false,
       sort_order: Number(p.sort_order || 0),
       max_purchase_per_user: Number(p.max_purchase_per_user || 0),
-      total_amount: Number(
-        ((p.total_amount || 0) / getQuotaPerUnit()).toFixed(2),
-      ),
+      total_amount: Number(quotaToDisplayAmount(p.total_amount || 0).toFixed(2)),
       upgrade_group: p.upgrade_group || '',
       stripe_price_id: p.stripe_price_id || '',
       creem_product_id: p.creem_product_id || '',
@@ -164,7 +161,7 @@ const AddEditSubscriptionModal = ({
               : 0,
           sort_order: Number(values.sort_order || 0),
           max_purchase_per_user: Number(values.max_purchase_per_user || 0),
-          total_amount: Math.round(Number(values.total_amount || 0) * getQuotaPerUnit()),
+          total_amount: displayAmountToQuota(values.total_amount),
           upgrade_group: values.upgrade_group || '',
         },
       };
