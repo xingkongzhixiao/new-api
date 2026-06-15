@@ -1241,12 +1241,19 @@ function joinBillingSummary(parts) {
   return parts.filter(Boolean).join('，');
 }
 
-function getGroupRatioText(groupRatio, user_group_ratio) {
-  const { ratio, label } = getEffectiveRatio(groupRatio, user_group_ratio);
-  return i18next.t('{{ratioType}} {{ratio}}x', {
-    ratioType: label,
-    ratio,
-  });
+function getGroupRatioText(groupRatio, user_group_ratio, subscriptionRatio, channelGroupRatio) {
+  if (isValidGroupRatio(user_group_ratio)) {
+    return i18next.t('专属倍率 {{ratio}}x', { ratio: user_group_ratio });
+  }
+  const validSub = Number.isFinite(subscriptionRatio) && subscriptionRatio > 0;
+  const validChan = Number.isFinite(channelGroupRatio) && channelGroupRatio > 0;
+  if (validSub && validChan) {
+    return i18next.t('渠道倍率 {{chan}}x × 订阅折扣 {{sub}}x', {
+      chan: channelGroupRatio,
+      sub: subscriptionRatio,
+    });
+  }
+  return i18next.t('分组倍率 {{ratio}}x', { ratio: groupRatio });
 }
 
 function formatRatioValue(value, digits = 6) {
@@ -1658,12 +1665,15 @@ export function renderModelPrice(
   imageGenerationCall = false,
   imageGenerationCallPrice = 0,
   displayMode = 'price',
+  subscriptionRatio = undefined,
+  channelGroupRatio = undefined,
 ) {
   const { ratio: effectiveGroupRatio, label: ratioLabel } = getEffectiveRatio(
     groupRatio,
     user_group_ratio,
   );
   groupRatio = effectiveGroupRatio;
+  const groupRatioDisplayText = getGroupRatioText(groupRatio, user_group_ratio, subscriptionRatio, channelGroupRatio);
 
   const { symbol, rate } = getCurrencyConfig();
 
@@ -1676,13 +1686,12 @@ export function renderModelPrice(
           rate,
         }),
         buildBillingPriceText(
-          '按次 {{symbol}}{{price}} * {{ratioType}} {{ratio}} = {{symbol}}{{total}}',
+          '按次 {{symbol}}{{price}} * {{groupRatioText}} = {{symbol}}{{total}}',
           {
             symbol,
             usdAmount: modelPrice,
             rate,
-            ratioType: ratioLabel,
-            ratio: groupRatio,
+            groupRatioText: groupRatioDisplayText,
             amountKey: 'price',
             total: formatBillingDisplayPrice(modelPrice * groupRatio, rate),
           },
@@ -1761,52 +1770,48 @@ export function renderModelPrice(
     }
 
     const outputDesc = buildBillingText(
-      '输出 {{completion}} tokens / 1M tokens * {{symbol}}{{compPrice}}) * {{ratioType}} {{ratio}}',
+      '输出 {{completion}} tokens / 1M tokens * {{symbol}}{{compPrice}}) * {{groupRatioText}}',
       {
         completion: completionTokens,
         symbol,
         compPrice: formatBillingDisplayPrice(completionRatioPrice, rate),
-        ratio: groupRatio,
-        ratioType: ratioLabel,
+        groupRatioText: groupRatioDisplayText,
       },
     );
 
     const extraServices = [
       webSearch && webSearchCallCount > 0
         ? buildBillingPriceText(
-            ' + Web搜索 {{count}}次 / 1K 次 * {{symbol}}{{price}} * {{ratioType}} {{ratio}}',
+            ' + Web搜索 {{count}}次 / 1K 次 * {{symbol}}{{price}} * {{groupRatioText}}',
             {
               count: webSearchCallCount,
               symbol,
               usdAmount: webSearchPrice,
               rate,
-              ratio: groupRatio,
-              ratioType: ratioLabel,
+              groupRatioText: groupRatioDisplayText,
             },
           )
         : '',
       fileSearch && fileSearchCallCount > 0
         ? buildBillingPriceText(
-            ' + 文件搜索 {{count}}次 / 1K 次 * {{symbol}}{{price}} * {{ratioType}} {{ratio}}',
+            ' + 文件搜索 {{count}}次 / 1K 次 * {{symbol}}{{price}} * {{groupRatioText}}',
             {
               count: fileSearchCallCount,
               symbol,
               usdAmount: fileSearchPrice,
               rate,
-              ratio: groupRatio,
-              ratioType: ratioLabel,
+              groupRatioText: groupRatioDisplayText,
             },
           )
         : '',
       imageGenerationCall && imageGenerationCallPrice > 0
         ? buildBillingPriceText(
-            ' + 图片生成调用 {{symbol}}{{price}} / 1次 * {{ratioType}} {{ratio}}',
+            ' + 图片生成调用 {{symbol}}{{price}} / 1次 * {{groupRatioText}}',
             {
               symbol,
               usdAmount: imageGenerationCallPrice,
               rate,
-              ratio: groupRatio,
-              ratioType: ratioLabel,
+              groupRatioText: groupRatioDisplayText,
             },
           )
         : '',
@@ -1892,13 +1897,12 @@ export function renderModelPrice(
     const displayPrice = (modelPrice * rate).toFixed(6);
     const displayTotal = (modelPrice * groupRatio * rate).toFixed(6);
     return i18next.t(
-      '按次：{{symbol}}{{price}} * {{ratioType}}：{{ratio}} = {{symbol}}{{total}}',
+      '按次：{{symbol}}{{price}} * {{groupRatioText}} = {{symbol}}{{total}}',
       {
         symbol: symbol,
         price: displayPrice,
-        ratio: groupRatio,
         total: displayTotal,
-        ratioType: ratioLabel,
+        groupRatioText: groupRatioDisplayText,
       },
     );
   }
@@ -1981,106 +1985,97 @@ export function renderModelPrice(
             audioRatio: audioRatioValue,
           })
         : null,
-      buildBillingText('{{ratioType}} {{ratio}}', {
-        ratioType: ratioLabel,
-        ratio: groupRatio,
+      buildBillingText('{{groupRatioText}}', {
+        groupRatioText: groupRatioDisplayText,
       }),
     ]
       .filter(Boolean)
       .join('，'),
     textInputTokens > 0
       ? buildBillingText(
-          '普通输入：{{tokens}} / 1M * 模型倍率 {{modelRatio}} * {{ratioType}} {{ratio}} = {{amount}}',
+          '普通输入：{{tokens}} / 1M * 模型倍率 {{modelRatio}} * {{groupRatioText}} = {{amount}}',
           {
             tokens: textInputTokens,
             modelRatio: modelRatioValue,
-            ratioType: ratioLabel,
-            ratio: groupRatio,
+            groupRatioText: groupRatioDisplayText,
             amount: renderDisplayAmountFromUsd(textInputAmount),
           },
         )
       : null,
     cacheInputTokens > 0
       ? buildBillingText(
-          '缓存输入：{{tokens}} / 1M * 模型倍率 {{modelRatio}} * 缓存倍率 {{cacheRatio}} * {{ratioType}} {{ratio}} = {{amount}}',
+          '缓存输入：{{tokens}} / 1M * 模型倍率 {{modelRatio}} * 缓存倍率 {{cacheRatio}} * {{groupRatioText}} = {{amount}}',
           {
             tokens: cacheInputTokens,
             modelRatio: modelRatioValue,
             cacheRatio: cacheRatioValue,
-            ratioType: ratioLabel,
-            ratio: groupRatio,
+            groupRatioText: groupRatioDisplayText,
             amount: renderDisplayAmountFromUsd(cacheInputAmount),
           },
         )
       : null,
     imageInputTokens > 0
       ? buildBillingText(
-          '图片输入：{{tokens}} / 1M * 模型倍率 {{modelRatio}} * 图片倍率 {{imageRatio}} * {{ratioType}} {{ratio}} = {{amount}}',
+          '图片输入：{{tokens}} / 1M * 模型倍率 {{modelRatio}} * 图片倍率 {{imageRatio}} * {{groupRatioText}} = {{amount}}',
           {
             tokens: imageInputTokens,
             modelRatio: modelRatioValue,
             imageRatio: imageRatioValue,
-            ratioType: ratioLabel,
-            ratio: groupRatio,
+            groupRatioText: groupRatioDisplayText,
             amount: renderDisplayAmountFromUsd(imageInputAmount),
           },
         )
       : null,
     audioInputTokens > 0 && audioRatioValue !== null
       ? buildBillingText(
-          '音频输入：{{tokens}} / 1M * 模型倍率 {{modelRatio}} * 音频倍率 {{audioRatio}} * {{ratioType}} {{ratio}} = {{amount}}',
+          '音频输入：{{tokens}} / 1M * 模型倍率 {{modelRatio}} * 音频倍率 {{audioRatio}} * {{groupRatioText}} = {{amount}}',
           {
             tokens: audioInputTokens,
             modelRatio: modelRatioValue,
             audioRatio: audioRatioValue,
-            ratioType: ratioLabel,
-            ratio: groupRatio,
+            groupRatioText: groupRatioDisplayText,
             amount: renderDisplayAmountFromUsd(audioInputAmount),
           },
         )
       : null,
     buildBillingText(
-      '输出：{{tokens}} / 1M * 模型倍率 {{modelRatio}} * 补全倍率 {{completionRatio}} * {{ratioType}} {{ratio}} = {{amount}}',
+      '输出：{{tokens}} / 1M * 模型倍率 {{modelRatio}} * 补全倍率 {{completionRatio}} * {{groupRatioText}} = {{amount}}',
       {
         tokens: completionTokens,
         modelRatio: modelRatioValue,
         completionRatio: completionRatioValue,
-        ratioType: ratioLabel,
-        ratio: groupRatio,
+        groupRatioText: groupRatioDisplayText,
         amount: renderDisplayAmountFromUsd(completionAmount),
       },
     ),
     webSearch && webSearchCallCount > 0
       ? buildBillingText(
-          'Web 搜索：{{count}} / 1K * 单价 {{price}} * {{ratioType}} {{ratio}} = {{amount}}',
+          'Web 搜索：{{count}} / 1K * 单价 {{price}} * {{groupRatioText}} = {{amount}}',
           {
             count: webSearchCallCount,
             price: renderDisplayAmountFromUsd(webSearchPrice),
-            ratioType: ratioLabel,
-            ratio: groupRatio,
+            groupRatioText: groupRatioDisplayText,
             amount: renderDisplayAmountFromUsd(webSearchAmount),
           },
         )
       : null,
     fileSearch && fileSearchCallCount > 0
       ? buildBillingText(
-          '文件搜索：{{count}} / 1K * 单价 {{price}} * {{ratioType}} {{ratio}} = {{amount}}',
+          '文件搜索：{{count}} / 1K * 单价 {{price}} * {{groupRatioText}} = {{amount}}',
           {
             count: fileSearchCallCount,
             price: renderDisplayAmountFromUsd(fileSearchPrice),
-            ratioType: ratioLabel,
-            ratio: groupRatio,
+            groupRatioText: groupRatioDisplayText,
             amount: renderDisplayAmountFromUsd(fileSearchAmount),
           },
         )
       : null,
     imageGenerationCall && imageGenerationCallPrice > 0
       ? buildBillingText(
-          '图片生成：1 次 * 单价 {{price}} * {{ratioType}} {{ratio}} = {{amount}}',
+          '图片生成：1 次 * 单价 {{price}} * {{groupRatioText}} = {{amount}}',
           {
             price: renderDisplayAmountFromUsd(imageGenerationCallPrice),
-            ratioType: ratioLabel,
-            ratio: groupRatio,
+            groupRatioText: groupRatioDisplayText,
             amount: renderDisplayAmountFromUsd(imageGenerationAmount),
           },
         )
@@ -2105,12 +2100,10 @@ export function renderLogContent(
   fileSearch = false,
   fileSearchCallCount = 0,
   displayMode = 'price',
+  subscriptionRatio = undefined,
+  channelGroupRatio = undefined,
 ) {
-  const {
-    ratio,
-    label: ratioLabel,
-    useUserGroupRatio: useUserGroupRatio,
-  } = getEffectiveRatio(groupRatio, user_group_ratio);
+  const groupRatioDisplayText = getGroupRatioText(groupRatio, user_group_ratio, subscriptionRatio, channelGroupRatio);
 
   // 获取货币配置
   const { symbol, rate } = getCurrencyConfig();
@@ -2122,7 +2115,7 @@ export function renderLogContent(
           symbol,
           price: (modelPrice * rate).toFixed(6),
         }),
-        getGroupRatioText(groupRatio, user_group_ratio),
+        groupRatioDisplayText,
       ]);
     }
 
@@ -2170,51 +2163,47 @@ export function renderLogContent(
         fileSearchCallCount,
       },
     );
-    parts.push(getGroupRatioText(groupRatio, user_group_ratio));
+    parts.push(groupRatioDisplayText);
     return joinBillingSummary(parts);
   }
 
   if (modelPrice !== -1) {
-    return i18next.t('模型价格 {{symbol}}{{price}}，{{ratioType}} {{ratio}}', {
+    return i18next.t('模型价格 {{symbol}}{{price}}，{{groupRatioText}}', {
       symbol: symbol,
       price: (modelPrice * rate).toFixed(6),
-      ratioType: ratioLabel,
-      ratio,
+      groupRatioText: groupRatioDisplayText,
     });
   } else {
     if (image) {
       return i18next.t(
-        '模型倍率 {{modelRatio}}，缓存倍率 {{cacheRatio}}，输出倍率 {{completionRatio}}，图片输入倍率 {{imageRatio}}，{{ratioType}} {{ratio}}',
+        '模型倍率 {{modelRatio}}，缓存倍率 {{cacheRatio}}，输出倍率 {{completionRatio}}，图片输入倍率 {{imageRatio}}，{{groupRatioText}}',
         {
           modelRatio: modelRatio,
           cacheRatio: cacheRatio,
           completionRatio: completionRatio,
           imageRatio: imageRatio,
-          ratioType: ratioLabel,
-          ratio,
+          groupRatioText: groupRatioDisplayText,
         },
       );
     } else if (webSearch) {
       return i18next.t(
-        '模型倍率 {{modelRatio}}，缓存倍率 {{cacheRatio}}，输出倍率 {{completionRatio}}，{{ratioType}} {{ratio}}，Web 搜索调用 {{webSearchCallCount}} 次',
+        '模型倍率 {{modelRatio}}，缓存倍率 {{cacheRatio}}，输出倍率 {{completionRatio}}，{{groupRatioText}}，Web 搜索调用 {{webSearchCallCount}} 次',
         {
           modelRatio: modelRatio,
           cacheRatio: cacheRatio,
           completionRatio: completionRatio,
-          ratioType: ratioLabel,
-          ratio,
+          groupRatioText: groupRatioDisplayText,
           webSearchCallCount,
         },
       );
     } else {
       return i18next.t(
-        '模型倍率 {{modelRatio}}，缓存倍率 {{cacheRatio}}，输出倍率 {{completionRatio}}，{{ratioType}} {{ratio}}',
+        '模型倍率 {{modelRatio}}，缓存倍率 {{cacheRatio}}，输出倍率 {{completionRatio}}，{{groupRatioText}}',
         {
           modelRatio: modelRatio,
           cacheRatio: cacheRatio,
           completionRatio: completionRatio,
-          ratioType: ratioLabel,
-          ratio,
+          groupRatioText: groupRatioDisplayText,
         },
       );
     }
@@ -2970,12 +2959,15 @@ export function renderClaudeLogContent(
   cacheCreationTokens1h = 0,
   cacheCreationRatio1h = 1.0,
   displayMode = 'price',
+  subscriptionRatio = undefined,
+  channelGroupRatio = undefined,
 ) {
   const { ratio: effectiveGroupRatio, label: ratioLabel } = getEffectiveRatio(
     groupRatio,
     user_group_ratio,
   );
   groupRatio = effectiveGroupRatio;
+  const groupRatioDisplayText = getGroupRatioText(groupRatio, user_group_ratio, subscriptionRatio, channelGroupRatio);
 
   // 获取货币配置
   const { symbol, rate } = getCurrencyConfig();
@@ -2987,7 +2979,7 @@ export function renderClaudeLogContent(
           symbol,
           price: (modelPrice * rate).toFixed(6),
         }),
-        getGroupRatioText(groupRatio, user_group_ratio),
+        groupRatioDisplayText,
       ]);
     }
 
@@ -3034,16 +3026,15 @@ export function renderClaudeLogContent(
         price: (modelRatio * 2.0 * cacheCreationRatio * rate).toFixed(6),
       },
     );
-    parts.push(getGroupRatioText(groupRatio, user_group_ratio));
+    parts.push(groupRatioDisplayText);
     return joinBillingSummary(parts);
   }
 
   if (modelPrice !== -1) {
-    return i18next.t('模型价格 {{symbol}}{{price}}，{{ratioType}} {{ratio}}', {
+    return i18next.t('模型价格 {{symbol}}{{price}}，{{groupRatioText}}', {
       symbol: symbol,
       price: (modelPrice * rate).toFixed(6),
-      ratioType: ratioLabel,
-      ratio: groupRatio,
+      groupRatioText: groupRatioDisplayText,
     });
   } else {
     const hasSplitCacheCreation =
@@ -3091,9 +3082,8 @@ export function renderClaudeLogContent(
       i18next.t('输出倍率 {{completionRatio}}', { completionRatio }),
       i18next.t('缓存倍率 {{cacheRatio}}', { cacheRatio }),
       cacheCreationPart,
-      i18next.t('{{ratioType}} {{ratio}}', {
-        ratioType: ratioLabel,
-        ratio: groupRatio,
+      i18next.t('{{groupRatioText}}', {
+        groupRatioText: groupRatioDisplayText,
       }),
     ];
 

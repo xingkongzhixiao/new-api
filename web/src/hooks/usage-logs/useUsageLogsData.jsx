@@ -445,6 +445,8 @@ export const useLogsData = () => {
                   other.cache_creation_ratio ||
                   1.0,
                 billingDisplayMode,
+                other?.subscription_ratio,
+                other?.channel_group_ratio,
               )
             : renderLogContent(
                 other?.model_ratio,
@@ -460,6 +462,8 @@ export const useLogsData = () => {
                 other.file_search || false,
                 other.file_search_call_count || 0,
                 billingDisplayMode,
+                other?.subscription_ratio,
+                other?.channel_group_ratio,
               ),
         });
         if (logs[i]?.content) {
@@ -567,6 +571,8 @@ export const useLogsData = () => {
               other?.image_generation_call || false,
               other?.image_generation_call_price || 0,
               billingDisplayMode,
+              other?.subscription_ratio,
+              other?.channel_group_ratio,
             );
           }
           expandDataLocal.push({

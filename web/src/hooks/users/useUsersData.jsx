@@ -270,7 +270,7 @@ export const useUsersData = () => {
   // Fetch groups data
   const fetchGroups = async () => {
     try {
-      let res = await API.get(`/api/group/`);
+      let res = await API.get(`/api/group/subscription`);
       if (res === undefined) {
         return;
       }
