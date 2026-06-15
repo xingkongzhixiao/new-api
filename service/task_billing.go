@@ -273,8 +273,6 @@ func RecalculateTaskQuotaByTokens(ctx context.Context, task *model.Task, totalTo
 		return
 	}
 
-	groupRatio := ratio_setting.GetGroupRatio(group)
-
 	// get the task owner's subscription group to apply discount
 	taskOwnerGroup := group
 	if taskUser, userErr := model.GetUserById(task.UserId, false); userErr == nil {
