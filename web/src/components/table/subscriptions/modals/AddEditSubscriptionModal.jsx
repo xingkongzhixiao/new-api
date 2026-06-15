@@ -43,7 +43,9 @@ import { API, showError, showSuccess } from '../../../../helpers';
 import {
   quotaToDisplayAmount,
   displayAmountToQuota,
+  getQuotaPerUnit,
 } from '../../../../helpers/quota';
+import { getCurrencyConfig } from '../../../../helpers/render';
 import { useIsMobile } from '../../../../hooks/common/useIsMobile';
 
 const { Text, Title } = Typography;
@@ -84,7 +86,7 @@ const AddEditSubscriptionModal = ({
     title: '',
     subtitle: '',
     price_amount: 0,
-    currency: 'USD',
+    currency: getCurrencyConfig().type,
     duration_unit: 'month',
     duration_value: 1,
     custom_seconds: 0,
@@ -108,7 +110,7 @@ const AddEditSubscriptionModal = ({
       title: p.title || '',
       subtitle: p.subtitle || '',
       price_amount: Number(p.price_amount || 0),
-      currency: 'USD',
+      currency: getCurrencyConfig().type,
       duration_unit: p.duration_unit || 'month',
       duration_value: Number(p.duration_value || 1),
       custom_seconds: Number(p.custom_seconds || 0),
@@ -118,7 +120,7 @@ const AddEditSubscriptionModal = ({
       sort_order: Number(p.sort_order || 0),
       max_purchase_per_user: Number(p.max_purchase_per_user || 0),
       total_amount: Number(
-        quotaToDisplayAmount(p.total_amount || 0).toFixed(2),
+        ((p.total_amount || 0) / getQuotaPerUnit()).toFixed(2),
       ),
       upgrade_group: p.upgrade_group || '',
       stripe_price_id: p.stripe_price_id || '',
@@ -152,7 +154,7 @@ const AddEditSubscriptionModal = ({
         plan: {
           ...values,
           price_amount: Number(values.price_amount || 0),
-          currency: 'USD',
+          currency: getCurrencyConfig().type,
           duration_value: Number(values.duration_value || 0),
           custom_seconds: Number(values.custom_seconds || 0),
           quota_reset_period: values.quota_reset_period || 'never',
@@ -162,7 +164,7 @@ const AddEditSubscriptionModal = ({
               : 0,
           sort_order: Number(values.sort_order || 0),
           max_purchase_per_user: Number(values.max_purchase_per_user || 0),
-          total_amount: displayAmountToQuota(values.total_amount),
+          total_amount: Math.round(Number(values.total_amount || 0) * getQuotaPerUnit()),
           upgrade_group: values.upgrade_group || '',
         },
       };
