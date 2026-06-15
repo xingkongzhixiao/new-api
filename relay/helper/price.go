@@ -46,16 +46,18 @@ func HandleGroupRatio(ctx *gin.Context, relayInfo *relaycommon.RelayInfo) types.
 		relayInfo.UsingGroup = autoGroup.(string)
 	}
 
-	// check user group special ratio
+	// check user group special ratio (highest priority override)
 	userGroupRatio, ok := ratio_setting.GetGroupGroupRatio(relayInfo.UserGroup, relayInfo.UsingGroup)
 	if ok {
-		// user group special ratio
+		// explicit override: use as-is, bypass discount multiplication
 		groupRatioInfo.GroupSpecialRatio = userGroupRatio
 		groupRatioInfo.GroupRatio = userGroupRatio
 		groupRatioInfo.HasSpecialRatio = true
 	} else {
-		// normal group ratio
-		groupRatioInfo.GroupRatio = ratio_setting.GetGroupRatio(relayInfo.UsingGroup)
+		// subscription discount × channel base ratio
+		channelRatio := ratio_setting.GetGroupRatio(relayInfo.UsingGroup)
+		userDiscount := ratio_setting.GetUserGroupDiscount(relayInfo.UserGroup)
+		groupRatioInfo.GroupRatio = channelRatio * userDiscount
 	}
 
 	return groupRatioInfo

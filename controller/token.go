@@ -9,6 +9,7 @@ import (
 	"github.com/QuantumNous/new-api/common"
 	"github.com/QuantumNous/new-api/i18n"
 	"github.com/QuantumNous/new-api/model"
+	"github.com/QuantumNous/new-api/service"
 	"github.com/QuantumNous/new-api/setting/operation_setting"
 
 	"github.com/gin-gonic/gin"
@@ -201,6 +202,18 @@ func AddToken(c *gin.Context) {
 		})
 		return
 	}
+	if token.Group != "" {
+		userId := c.GetInt("id")
+		userGroup, err := model.GetUserGroup(userId, false)
+		if err != nil {
+			common.ApiError(c, err)
+			return
+		}
+		if !service.GroupInUserUsableGroups(userGroup, token.Group) {
+			common.ApiErrorI18n(c, i18n.MsgTokenGroupNotAllowed)
+			return
+		}
+	}
 	key, err := common.GenerateKey()
 	if err != nil {
 		common.ApiErrorI18n(c, i18n.MsgTokenGenerateFailed)
@@ -289,6 +302,17 @@ func UpdateToken(c *gin.Context) {
 	if statusOnly != "" {
 		cleanToken.Status = token.Status
 	} else {
+		if token.Group != "" {
+			userGroup, err := model.GetUserGroup(userId, false)
+			if err != nil {
+				common.ApiError(c, err)
+				return
+			}
+			if !service.GroupInUserUsableGroups(userGroup, token.Group) {
+				common.ApiErrorI18n(c, i18n.MsgTokenGroupNotAllowed)
+				return
+			}
+		}
 		// If you add more fields, please also update token.Update()
 		cleanToken.Name = token.Name
 		cleanToken.ExpiredTime = token.ExpiredTime

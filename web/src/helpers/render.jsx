@@ -777,11 +777,12 @@ export function renderText(text, limit) {
  * @param {string} group - The input group string
  * @returns {JSX.Element} - The rendered group tags
  */
-export function renderGroup(group) {
+export function renderGroup(group, userGroup = '') {
   if (group === '') {
+    const displayGroup = userGroup || i18next.t('用户分组');
     return (
       <Tag key='default' color='white' shape='circle'>
-        {i18next.t('用户分组')}
+        {displayGroup}
       </Tag>
     );
   }

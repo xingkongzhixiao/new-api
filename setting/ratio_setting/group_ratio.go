@@ -32,10 +32,13 @@ var defaultGroupSpecialUsableGroup = map[string]map[string]string{
 	},
 }
 
+var userGroupDiscountMap = types.NewRWMap[string, float64]()
+
 type GroupRatioSetting struct {
 	GroupRatio              *types.RWMap[string, float64]            `json:"group_ratio"`
 	GroupGroupRatio         *types.RWMap[string, map[string]float64] `json:"group_group_ratio"`
 	GroupSpecialUsableGroup *types.RWMap[string, map[string]string]  `json:"group_special_usable_group"`
+	UserGroupDiscount       *types.RWMap[string, float64]            `json:"user_group_discount"`
 }
 
 var groupRatioSetting GroupRatioSetting
@@ -51,6 +54,7 @@ func init() {
 		GroupSpecialUsableGroup: groupSpecialUsableGroup,
 		GroupRatio:              groupRatioMap,
 		GroupGroupRatio:         groupGroupRatioMap,
+		UserGroupDiscount:       userGroupDiscountMap,
 	}
 
 	config.GlobalConfig.Register("group_ratio_setting", &groupRatioSetting)
@@ -119,6 +123,36 @@ func CheckGroupRatio(jsonStr string) error {
 	for name, ratio := range checkGroupRatio {
 		if ratio < 0 {
 			return errors.New("group ratio must be not less than 0: " + name)
+		}
+	}
+	return nil
+}
+
+func GetUserGroupDiscount(userGroup string) float64 {
+	discount, ok := userGroupDiscountMap.Get(userGroup)
+	if !ok {
+		return 1.0
+	}
+	return discount
+}
+
+func UserGroupDiscount2JSONString() string {
+	return userGroupDiscountMap.MarshalJSONString()
+}
+
+func UpdateUserGroupDiscountByJSONString(jsonStr string) error {
+	return types.LoadFromJsonString(userGroupDiscountMap, jsonStr)
+}
+
+func CheckUserGroupDiscount(jsonStr string) error {
+	checkMap := make(map[string]float64)
+	err := json.Unmarshal([]byte(jsonStr), &checkMap)
+	if err != nil {
+		return err
+	}
+	for name, discount := range checkMap {
+		if discount < 0 {
+			return errors.New("user group discount must be >= 0: " + name)
 		}
 	}
 	return nil

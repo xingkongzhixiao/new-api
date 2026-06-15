@@ -207,6 +207,15 @@ func UpdateOption(c *gin.Context) {
 			})
 			return
 		}
+	case "UserGroupDiscount":
+		err = ratio_setting.CheckUserGroupDiscount(option.Value.(string))
+		if err != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": "订阅分组折扣设置失败: " + err.Error(),
+			})
+			return
+		}
 	case "ImageRatio":
 		err = ratio_setting.UpdateImageRatioByJSONString(option.Value.(string))
 		if err != nil {

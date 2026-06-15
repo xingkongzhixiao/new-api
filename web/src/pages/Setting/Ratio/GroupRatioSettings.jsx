@@ -47,6 +47,7 @@ import GroupTable from './components/GroupTable';
 import AutoGroupList from './components/AutoGroupList';
 import GroupGroupRatioRules from './components/GroupGroupRatioRules';
 import GroupSpecialUsableRules from './components/GroupSpecialUsableRules';
+import UserGroupDiscountTable from './components/UserGroupDiscountTable';
 
 const { Text, Title, Paragraph } = Typography;
 
@@ -54,6 +55,7 @@ const OPTION_KEYS = [
   'GroupRatio',
   'UserUsableGroups',
   'GroupGroupRatio',
+  'UserGroupDiscount',
   'group_ratio_setting.group_special_usable_group',
   'AutoGroups',
   'DefaultUseAutoGroup',
@@ -78,6 +80,7 @@ export default function GroupRatioSettings(props) {
     GroupRatio: '',
     UserUsableGroups: '',
     GroupGroupRatio: '',
+    UserGroupDiscount: '',
     'group_ratio_setting.group_special_usable_group': '',
     AutoGroups: '',
     DefaultUseAutoGroup: false,
@@ -169,6 +172,10 @@ export default function GroupRatioSettings(props) {
     setInputs((prev) => ({ ...prev, GroupGroupRatio: value }));
   }, []);
 
+  const handleUserGroupDiscountChange = useCallback((value) => {
+    setInputs((prev) => ({ ...prev, UserGroupDiscount: value }));
+  }, []);
+
   const handleSpecialUsableChange = useCallback((value) => {
     setInputs((prev) => ({
       ...prev,
@@ -189,6 +196,17 @@ export default function GroupRatioSettings(props) {
           groupRatio={inputs.GroupRatio}
           userUsableGroups={inputs.UserUsableGroups}
           onChange={handleGroupTableChange}
+        />
+      </Form.Section>
+
+      <Form.Section text={t('订阅分组折扣')}>
+        <Text type='tertiary' size='small' style={{ display: 'block', marginBottom: 12 }}>
+          {t('配置订阅分组的折扣倍率。用户购买订阅后升级到对应分组，最终计费 = 订阅折扣 × 渠道分组倍率。例如折扣 0.9 × 渠道倍率 0.9 = 最终倍率 0.81。分组特殊倍率（GroupGroupRatio）配置时优先生效，完全覆盖此乘法逻辑。')}
+        </Text>
+        <UserGroupDiscountTable
+          key={`ugd_${dv}`}
+          value={inputs.UserGroupDiscount}
+          onChange={handleUserGroupDiscountChange}
         />
       </Form.Section>
 
@@ -337,6 +355,30 @@ export default function GroupRatioSettings(props) {
               ]}
               onChange={(value) =>
                 setInputs((prev) => ({ ...prev, GroupGroupRatio: value }))
+              }
+            />
+          </Col>
+        </Row>
+        <Row gutter={16}>
+          <Col xs={24} sm={16}>
+            <Form.TextArea
+              label={t('订阅分组折扣')}
+              placeholder={t('为一个 JSON 文本，键为订阅分组名称，值为折扣倍率')}
+              extraText={t(
+                '订阅分组折扣配置，最终计费倍率 = 订阅折扣 × 渠道分组基础倍率。例如：{"vip": 0.9, "svip": 0.7}，表示 vip 订阅用户享受 9 折，svip 用户享受 7 折。若配置了分组特殊倍率（GroupGroupRatio），则特殊倍率优先生效。',
+              )}
+              field={'UserGroupDiscount'}
+              autosize={{ minRows: 6, maxRows: 12 }}
+              trigger='blur'
+              stopValidateWithError
+              rules={[
+                {
+                  validator: (rule, value) => verifyJSON(value),
+                  message: t('不是合法的 JSON 字符串'),
+                },
+              ]}
+              onChange={(value) =>
+                setInputs((prev) => ({ ...prev, UserGroupDiscount: value }))
               }
             />
           </Col>
@@ -618,6 +660,38 @@ export default function GroupRatioSettings(props) {
                 <Text strong code>AutoGroups</Text>{' — '}{t('有序字符串数组')}
               </Paragraph>
               <CodeBlock>{`["default", "vip"]`}</CodeBlock>
+            </GuideSection>
+          </div>
+        </Tabs.TabPane>
+
+        <Tabs.TabPane tab={t('订阅折扣')} itemKey='discount'>
+          <div style={{ paddingTop: 20 }}>
+            <Title heading={5}>{t('订阅分组折扣')}</Title>
+            <Paragraph style={{ marginTop: 12, lineHeight: 1.8 }}>
+              {t('用户购买订阅套餐后，系统会将其升级到对应的订阅分组（如 A、B、C）。订阅分组的折扣倍率会与用户选择的渠道分组倍率相乘，得出最终计费倍率。')}
+            </Paragraph>
+
+            <GuideSection title={t('查看示例')}>
+              <Paragraph size='small' type='tertiary' style={{ marginBottom: 8 }}>
+                {t('场景：渠道分组 x 倍率 0.9，订阅分组 A 折扣 0.9，最终倍率 = 0.9 × 0.9 = 0.81')}
+              </Paragraph>
+              <CodeBlock>
+                {`${t('渠道分组倍率')}（GroupRatio）:\n  x → 0.9\n  y → 1.0\n\n${t('订阅分组折扣')}（UserGroupDiscount）:\n  A → 0.9\n  B → 0.8\n\n${t('用户A（订阅分组 A）使用渠道分组 x 的令牌：')}\n  0.9 × 0.9 = 0.81\n\n${t('用户B（订阅分组 B）使用渠道分组 x 的令牌：')}\n  0.9 × 0.8 = 0.72`}
+              </CodeBlock>
+              <Paragraph size='small' style={{ marginTop: 10, lineHeight: 1.8 }}>
+                {t('未配置 UserGroupDiscount 的订阅分组，折扣默认为 1.0（不打折）。')}
+              </Paragraph>
+              <Paragraph size='small' style={{ marginTop: 8, lineHeight: 1.8 }}>
+                <Text strong>{t('注意：')}</Text>
+                {t('若同时配置了分组特殊倍率（GroupGroupRatio），则特殊倍率优先生效，完全绕过订阅折扣 × 渠道倍率的乘法逻辑。')}
+              </Paragraph>
+            </GuideSection>
+
+            <GuideSection title={t('JSON 格式参考')}>
+              <Paragraph size='small' style={{ marginBottom: 4 }}>
+                <Text strong code>UserGroupDiscount</Text>{' — '}{t('订阅分组名称到折扣倍率的映射（0~1，1 表示不打折）')}
+              </Paragraph>
+              <CodeBlock>{`{"A": 0.9, "B": 0.8, "default": 1.0}`}</CodeBlock>
             </GuideSection>
           </div>
         </Tabs.TabPane>

@@ -67,6 +67,7 @@ const EditTokenModal = (props) => {
   const formApiRef = useRef(null);
   const [models, setModels] = useState([]);
   const [groups, setGroups] = useState([]);
+  const [userGroup, setUserGroup] = useState('');
   const [showQuotaInput, setShowQuotaInput] = useState(false);
   const isEdit = props.editingToken.id !== undefined;
 
@@ -135,8 +136,9 @@ const EditTokenModal = (props) => {
 
   const loadGroups = async () => {
     let res = await API.get(`/api/user/self/groups`);
-    const { success, message, data } = res.data;
+    const { success, message, data, user_group } = res.data;
     if (success) {
+      setUserGroup(user_group || '');
       let localGroupOptions = Object.entries(data).map(([group, info]) => ({
         label: info.desc,
         value: group,
@@ -147,6 +149,12 @@ const EditTokenModal = (props) => {
           localGroupOptions.sort((a, b) => (a.value === 'auto' ? -1 : 1));
         }
       }
+      // Prepend the "use user group" default option
+      localGroupOptions.unshift({
+        label: t('默认（{{group}}分组）', { group: user_group || t('用户分组') }),
+        value: '',
+        ratio: undefined,
+      });
       setGroups(localGroupOptions);
       // if (statusState?.status?.default_use_auto_group && formApiRef.current) {
       //   formApiRef.current.setValue('group', 'auto');

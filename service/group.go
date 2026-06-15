@@ -8,32 +8,26 @@ import (
 )
 
 func GetUserUsableGroups(userGroup string) map[string]string {
-	groupsCopy := setting.GetUserUsableGroupsCopy()
+	// start from the global channel group pool
+	result := setting.GetUserUsableGroupsCopy()
+
+	// apply per-user-group special rules (+: add, -: remove)
 	if userGroup != "" {
-		specialSettings, b := ratio_setting.GetGroupRatioSetting().GroupSpecialUsableGroup.Get(userGroup)
-		if b {
-			// 处理特殊可用分组
+		specialSettings, ok := ratio_setting.GetGroupRatioSetting().GroupSpecialUsableGroup.Get(userGroup)
+		if ok {
 			for specialGroup, desc := range specialSettings {
 				if strings.HasPrefix(specialGroup, "-:") {
-					// 移除分组
-					groupToRemove := strings.TrimPrefix(specialGroup, "-:")
-					delete(groupsCopy, groupToRemove)
+					delete(result, strings.TrimPrefix(specialGroup, "-:"))
 				} else if strings.HasPrefix(specialGroup, "+:") {
-					// 添加分组
-					groupToAdd := strings.TrimPrefix(specialGroup, "+:")
-					groupsCopy[groupToAdd] = desc
+					result[strings.TrimPrefix(specialGroup, "+:")] = desc
 				} else {
-					// 直接添加分组
-					groupsCopy[specialGroup] = desc
+					result[specialGroup] = desc
 				}
 			}
 		}
-		// 如果userGroup不在UserUsableGroups中，返回UserUsableGroups + userGroup
-		if _, ok := groupsCopy[userGroup]; !ok {
-			groupsCopy[userGroup] = "用户分组"
-		}
 	}
-	return groupsCopy
+
+	return result
 }
 
 func GroupInUserUsableGroups(userGroup, groupName string) bool {
@@ -61,5 +55,5 @@ func GetUserGroupRatio(userGroup, group string) float64 {
 	if ok {
 		return ratio
 	}
-	return ratio_setting.GetGroupRatio(group)
+	return ratio_setting.GetGroupRatio(group) * ratio_setting.GetUserGroupDiscount(userGroup)
 }
