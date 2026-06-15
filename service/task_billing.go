@@ -286,7 +286,8 @@ func RecalculateTaskQuotaByTokens(ctx context.Context, task *model.Task, totalTo
 	if hasOverride {
 		finalGroupRatio = userGroupRatio
 	} else {
-		finalGroupRatio = groupRatio * ratio_setting.GetUserGroupDiscount(taskOwnerGroup)
+		finalGroupRatio = ratio_setting.GetGroupRatio(taskOwnerGroup) *
+			ratio_setting.GetChannelGroupRatio(group)
 	}
 
 	// 计算 OtherRatios 乘积（视频折扣、时长等）

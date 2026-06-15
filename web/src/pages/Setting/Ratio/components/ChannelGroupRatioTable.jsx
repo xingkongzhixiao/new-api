@@ -13,7 +13,7 @@ import CardTable from '../../../../components/common/ui/CardTable';
 const { Text } = Typography;
 
 let _idCounter = 0;
-const uid = () => `ugd_${++_idCounter}`;
+const uid = () => `cgr_${++_idCounter}`;
 
 function parseJSON(str, fallback) {
   if (!str || !str.trim()) return fallback;
@@ -24,25 +24,25 @@ function parseJSON(str, fallback) {
   }
 }
 
-function buildRows(discountStr) {
-  const discountMap = parseJSON(discountStr, {});
-  return Object.entries(discountMap).map(([name, discount]) => ({
+function buildRows(ratioStr) {
+  const ratioMap = parseJSON(ratioStr, {});
+  return Object.entries(ratioMap).map(([name, ratio]) => ({
     _id: uid(),
     name,
-    discount: typeof discount === 'number' ? discount : 1,
+    ratio: typeof ratio === 'number' ? ratio : 1,
   }));
 }
 
-export function serializeUserGroupDiscount(rows) {
+export function serializeChannelGroupRatio(rows) {
   const result = {};
   rows.forEach((row) => {
     if (!row.name) return;
-    result[row.name] = row.discount;
+    result[row.name] = row.ratio;
   });
   return JSON.stringify(result, null, 2);
 }
 
-export default function UserGroupDiscountTable({ value, onChange }) {
+export default function ChannelGroupRatioTable({ value, onChange }) {
   const { t } = useTranslation();
   const [rows, setRows] = useState(() => buildRows(value));
   const onChangeRef = useRef(onChange);
@@ -51,7 +51,7 @@ export default function UserGroupDiscountTable({ value, onChange }) {
   const emitAndSet = useCallback((updater) => {
     setRows((prev) => {
       const next = typeof updater === 'function' ? updater(prev) : updater;
-      onChangeRef.current?.(serializeUserGroupDiscount(next));
+      onChangeRef.current?.(serializeChannelGroupRatio(next));
       return next;
     });
   }, []);
@@ -69,12 +69,12 @@ export default function UserGroupDiscountTable({ value, onChange }) {
     emitAndSet((prev) => {
       const existingNames = new Set(prev.map((r) => r.name));
       let counter = 1;
-      let newName = `sub_group_${counter}`;
+      let newName = `channel_group_${counter}`;
       while (existingNames.has(newName)) {
         counter++;
-        newName = `sub_group_${counter}`;
+        newName = `channel_group_${counter}`;
       }
-      return [...prev, { _id: uid(), name: newName, discount: 1 }];
+      return [...prev, { _id: uid(), name: newName, ratio: 1 }];
     });
   }, [emitAndSet]);
 
@@ -88,7 +88,7 @@ export default function UserGroupDiscountTable({ value, onChange }) {
   const columns = useMemo(
     () => [
       {
-        title: t('订阅分组名称'),
+        title: t('渠道分组名称'),
         dataIndex: 'name',
         key: 'name',
         width: 200,
@@ -101,19 +101,18 @@ export default function UserGroupDiscountTable({ value, onChange }) {
         ),
       },
       {
-        title: t('折扣倍率'),
-        dataIndex: 'discount',
-        key: 'discount',
+        title: t('倍率'),
+        dataIndex: 'ratio',
+        key: 'ratio',
         width: 160,
         render: (_, record) => (
           <InputNumber
             size='small'
             min={0}
-            max={10}
-            step={0.05}
-            value={record.discount}
+            step={0.1}
+            value={record.ratio}
             style={{ width: '100%' }}
-            onChange={(v) => updateRow(record._id, 'discount', v ?? 1)}
+            onChange={(v) => updateRow(record._id, 'ratio', v ?? 1)}
           />
         ),
       },
@@ -123,7 +122,7 @@ export default function UserGroupDiscountTable({ value, onChange }) {
         width: 50,
         render: (_, record) => (
           <Popconfirm
-            title={t('确认删除该订阅分组折扣？')}
+            title={t('确认删除该渠道分组倍率？')}
             onConfirm={() => removeRow(record._id)}
             position='left'
           >
@@ -150,13 +149,13 @@ export default function UserGroupDiscountTable({ value, onChange }) {
         size='small'
         empty={
           <Text type='tertiary'>
-            {t('暂无订阅分组折扣，点击下方按钮添加')}
+            {t('暂无渠道分组倍率，点击下方按钮添加')}
           </Text>
         }
       />
       <div className='mt-3 flex justify-center'>
         <Button icon={<IconPlus />} theme='outline' onClick={addRow}>
-          {t('添加订阅分组')}
+          {t('添加渠道分组')}
         </Button>
       </div>
     </div>

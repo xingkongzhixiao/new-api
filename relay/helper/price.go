@@ -55,8 +55,8 @@ func HandleGroupRatio(ctx *gin.Context, relayInfo *relaycommon.RelayInfo) types.
 		groupRatioInfo.HasSpecialRatio = true
 	} else {
 		// subscription discount × channel base ratio
-		channelRatio := ratio_setting.GetGroupRatio(relayInfo.UsingGroup)
-		userDiscount := ratio_setting.GetUserGroupDiscount(relayInfo.UserGroup)
+		channelRatio := ratio_setting.GetChannelGroupRatio(relayInfo.UsingGroup)
+		userDiscount := ratio_setting.GetGroupRatio(relayInfo.UserGroup)
 		groupRatioInfo.GroupRatio = channelRatio * userDiscount
 	}
 

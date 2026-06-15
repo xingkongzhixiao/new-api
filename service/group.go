@@ -55,5 +55,5 @@ func GetUserGroupRatio(userGroup, group string) float64 {
 	if ok {
 		return ratio
 	}
-	return ratio_setting.GetGroupRatio(group) * ratio_setting.GetUserGroupDiscount(userGroup)
+	return ratio_setting.GetGroupRatio(userGroup) * ratio_setting.GetChannelGroupRatio(group)
 }
