@@ -160,8 +160,8 @@ export default function GroupRatioSettings(props) {
   }, [props.options]);
 
   const handleGroupTableChange = useCallback(
-    ({ GroupRatio, UserUsableGroups }) => {
-      setInputs((prev) => ({ ...prev, GroupRatio, UserUsableGroups }));
+    ({ GroupRatio }) => {
+      setInputs((prev) => ({ ...prev, GroupRatio }));
     },
     [],
   );
@@ -178,9 +178,12 @@ export default function GroupRatioSettings(props) {
     setInputs((prev) => ({ ...prev, UserGroupDiscount: value }));
   }, []);
 
-  const handleChannelGroupRatioChange = useCallback((value) => {
-    setInputs((prev) => ({ ...prev, ChannelGroupRatio: value }));
-  }, []);
+  const handleChannelGroupRatioChange = useCallback(
+    ({ ChannelGroupRatio, UserUsableGroups }) => {
+      setInputs((prev) => ({ ...prev, ChannelGroupRatio, UserUsableGroups }));
+    },
+    [],
+  );
 
   const handleSpecialUsableChange = useCallback((value) => {
     setInputs((prev) => ({
@@ -195,23 +198,23 @@ export default function GroupRatioSettings(props) {
     <Form key='form-visual' values={inputs} style={{ marginBottom: 15 }}>
       <Form.Section text={t('分组管理')}>
         <Text type='tertiary' size='small' style={{ display: 'block', marginBottom: 12 }}>
-          {t('倍率用于计费乘数（订阅分组折扣），勾选「用户可选」后用户可在创建令牌时选择该分组')}
+          {t('配置用户订阅分组的折扣倍率，key 为用户购买订阅后升级到的分组名，value 为折扣乘数（1 = 不打折）')}
         </Text>
         <GroupTable
           key={`gt_${dv}`}
           groupRatio={inputs.GroupRatio}
-          userUsableGroups={inputs.UserUsableGroups}
           onChange={handleGroupTableChange}
         />
       </Form.Section>
 
-      <Form.Section text={t('渠道分组倍率')}>
+      <Form.Section text={t('渠道分组')}>
         <Text type='tertiary' size='small' style={{ display: 'block', marginBottom: 12 }}>
-          {t('配置渠道分组的基础倍率。创建令牌和渠道时选择的分组共用此配置。最终计费 = 用户分组折扣（分组管理）× 渠道分组基础倍率。')}
+          {t('配置渠道分组的基础倍率，创建渠道和令牌时选择的分组均来自此处。勾选「用户可选」后，用户可在创建令牌时选择该分组。最终计费 = 用户分组折扣 × 渠道分组倍率。')}
         </Text>
         <ChannelGroupRatioTable
           key={`cgr_${dv}`}
-          value={inputs.ChannelGroupRatio}
+          channelGroupRatio={inputs.ChannelGroupRatio}
+          userUsableGroups={inputs.UserUsableGroups}
           onChange={handleChannelGroupRatioChange}
         />
       </Form.Section>

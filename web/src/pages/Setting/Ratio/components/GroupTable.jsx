@@ -3,7 +3,6 @@ import {
   Button,
   Input,
   InputNumber,
-  Checkbox,
   Typography,
   Popconfirm,
 } from '@douyinfe/semi-ui';
@@ -25,52 +24,27 @@ function parseJSON(str, fallback) {
   }
 }
 
-function buildRows(groupRatioStr, userUsableGroupsStr) {
+function buildRows(groupRatioStr) {
   const ratioMap = parseJSON(groupRatioStr, {});
-  const usableMap = parseJSON(userUsableGroupsStr, {});
-
-  const allNames = new Set([
-    ...Object.keys(ratioMap),
-    ...Object.keys(usableMap),
-  ]);
-
-  return Array.from(allNames).map((name) => ({
+  return Object.entries(ratioMap).map(([name, ratio]) => ({
     _id: uid(),
     name,
-    ratio: ratioMap[name] ?? 1,
-    selectable: name in usableMap,
-    description: usableMap[name] ?? '',
+    ratio: typeof ratio === 'number' ? ratio : 1,
   }));
 }
 
 export function serializeGroupTable(rows) {
   const groupRatio = {};
-  const userUsableGroups = {};
-
   rows.forEach((row) => {
     if (!row.name) return;
     groupRatio[row.name] = row.ratio;
-    if (row.selectable) {
-      userUsableGroups[row.name] = row.description;
-    }
   });
-
-  return {
-    GroupRatio: JSON.stringify(groupRatio, null, 2),
-    UserUsableGroups: JSON.stringify(userUsableGroups, null, 2),
-  };
+  return { GroupRatio: JSON.stringify(groupRatio, null, 2) };
 }
 
-export default function GroupTable({ groupRatio, userUsableGroups, onChange }) {
+export default function GroupTable({ groupRatio, onChange }) {
   const { t } = useTranslation();
-
-  const [rows, setRows] = useState(() =>
-    buildRows(groupRatio, userUsableGroups),
-  );
-
-  // Use functional setRows to keep updateRow/addRow/removeRow referentially
-  // stable, preventing columns useMemo from rebuilding on every keystroke
-  // which causes the Input cursor to jump to end (cursor reset bug).
+  const [rows, setRows] = useState(() => buildRows(groupRatio));
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
 
@@ -100,16 +74,7 @@ export default function GroupTable({ groupRatio, userUsableGroups, onChange }) {
         counter++;
         newName = `group_${counter}`;
       }
-      return [
-        ...prev,
-        {
-          _id: uid(),
-          name: newName,
-          ratio: 1,
-          selectable: true,
-          description: '',
-        },
-      ];
+      return [...prev, { _id: uid(), name: newName, ratio: 1 }];
     });
   }, [emitAndSet]);
 
@@ -124,14 +89,10 @@ export default function GroupTable({ groupRatio, userUsableGroups, onChange }) {
 
   const duplicateNames = useMemo(() => {
     const counts = {};
-    groupNames.forEach((n) => {
-      counts[n] = (counts[n] || 0) + 1;
-    });
+    groupNames.forEach((n) => { counts[n] = (counts[n] || 0) + 1; });
     return new Set(Object.keys(counts).filter((k) => counts[k] > 1));
   }, [groupNames]);
 
-  // Use ref so column render functions always read the latest duplicate set
-  // without adding duplicateNames to columns deps (which would break cursor).
   const duplicateNamesRef = useRef(duplicateNames);
   duplicateNamesRef.current = duplicateNames;
 
@@ -141,66 +102,31 @@ export default function GroupTable({ groupRatio, userUsableGroups, onChange }) {
         title: t('分组名称'),
         dataIndex: 'name',
         key: 'name',
-        width: 180,
+        width: 200,
         render: (_, record) => (
           <Input
             size='small'
             value={record.name}
-            status={
-              duplicateNamesRef.current.has(record.name) ? 'warning' : undefined
-            }
+            status={duplicateNamesRef.current.has(record.name) ? 'warning' : undefined}
             onChange={(v) => updateRow(record._id, 'name', v)}
           />
         ),
       },
       {
-        title: t('倍率'),
+        title: t('折扣倍率'),
         dataIndex: 'ratio',
         key: 'ratio',
-        width: 120,
+        width: 160,
         render: (_, record) => (
           <InputNumber
             size='small'
             min={0}
-            step={0.1}
+            step={0.05}
             value={record.ratio}
             style={{ width: '100%' }}
-            onChange={(v) => updateRow(record._id, 'ratio', v ?? 0)}
+            onChange={(v) => updateRow(record._id, 'ratio', v ?? 1)}
           />
         ),
-      },
-      {
-        title: t('用户可选'),
-        dataIndex: 'selectable',
-        key: 'selectable',
-        width: 90,
-        align: 'center',
-        render: (_, record) => (
-          <Checkbox
-            checked={record.selectable}
-            onChange={(e) =>
-              updateRow(record._id, 'selectable', e.target.checked)
-            }
-          />
-        ),
-      },
-      {
-        title: t('描述'),
-        dataIndex: 'description',
-        key: 'description',
-        render: (_, record) =>
-          record.selectable ? (
-            <Input
-              size='small'
-              value={record.description}
-              placeholder={t('分组描述')}
-              onChange={(v) => updateRow(record._id, 'description', v)}
-            />
-          ) : (
-            <Text type='tertiary' size='small'>
-              -
-            </Text>
-          ),
       },
       {
         title: '',
@@ -208,16 +134,11 @@ export default function GroupTable({ groupRatio, userUsableGroups, onChange }) {
         width: 50,
         render: (_, record) => (
           <Popconfirm
-            title={t('确认删除该分组？')}
+            title={t('确认删除该订阅分组？')}
             onConfirm={() => removeRow(record._id)}
             position='left'
           >
-            <Button
-              icon={<IconDelete />}
-              type='danger'
-              theme='borderless'
-              size='small'
-            />
+            <Button icon={<IconDelete />} type='danger' theme='borderless' size='small' />
           </Popconfirm>
         ),
       },
@@ -233,11 +154,11 @@ export default function GroupTable({ groupRatio, userUsableGroups, onChange }) {
         rowKey='_id'
         hidePagination
         size='small'
-        empty={<Text type='tertiary'>{t('暂无分组，点击下方按钮添加')}</Text>}
+        empty={<Text type='tertiary'>{t('暂无订阅分组，点击下方按钮添加')}</Text>}
       />
       <div className='mt-3 flex justify-center'>
         <Button icon={<IconPlus />} theme='outline' onClick={addRow}>
-          {t('添加分组')}
+          {t('添加订阅分组')}
         </Button>
       </div>
       {duplicateNames.size > 0 && (

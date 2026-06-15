@@ -170,6 +170,10 @@ func GetChannelGroupRatio(usingGroup string) float64 {
 	return ratio
 }
 
+func GetChannelGroupRatioCopy() map[string]float64 {
+	return channelGroupRatioMap.ReadAll()
+}
+
 func ChannelGroupRatio2JSONString() string {
 	return channelGroupRatioMap.MarshalJSONString()
 }
